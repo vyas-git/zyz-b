@@ -2,11 +2,12 @@ package main
 
 import (
 	"flexera/model"
-	"flexera/service"
+	"flexera/services/licensemanager"
 	"testing"
 )
 
 func TestCalculateMinimumCopies(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		rows     []model.Installation
@@ -14,6 +15,33 @@ func TestCalculateMinimumCopies(t *testing.T) {
 		expected int
 	}{
 		{
+			name: "Example One ",
+			rows: []model.Installation{
+				{1, 1, 374, "LAPTOP"},
+				{2, 1, 374, "DESKTOP"},
+			},
+			appID:    374,
+			expected: 1,
+		}, {
+			name: "Example Two ",
+			rows: []model.Installation{
+				{1, 1, 374, "LAPTOP"},
+				{2, 1, 374, "DESKTOP"},
+				{3, 2, 374, "DESKTOP"},
+				{4, 2, 374, "DESKTOP"},
+			},
+			appID:    374,
+			expected: 3,
+		}, {
+			name: "Example Three ",
+			rows: []model.Installation{
+				{1, 1, 374, "LAPTOP"},
+				{2, 2, 374, "DESKTOP"},
+				{2, 2, 374, "desktop"},
+			},
+			appID:    374,
+			expected: 2,
+		}, {
 			name: "Basic scenario",
 			rows: []model.Installation{
 				{1, 1, 374, "LAPTOP"},
@@ -66,7 +94,11 @@ func TestCalculateMinimumCopies(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := service.CalculateMinimumCopies(test.rows, test.appID)
+			lm := licensemanager.NewLicenseManager()
+			for _, row := range test.rows {
+				lm.ProccessRow(row, test.appID)
+			}
+			result := lm.GetMiniCopiesRequired()
 			if result != test.expected {
 				t.Errorf("Expected: %d, Got: %d", test.expected, result)
 			}

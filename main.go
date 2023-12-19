@@ -2,13 +2,11 @@ package main
 
 import (
 	"encoding/csv"
-	"flexera/model"
-	"flexera/service"
+	"flexera/services/csvreader"
+	"flexera/services/licensemanager"
 	"fmt"
 	"io"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -24,47 +22,44 @@ func main() {
 		os.Exit(1)
 	}
 	defer file.Close()
-	startTime := time.Now()
 
 	reader := csv.NewReader(file)
 	reader.FieldsPerRecord = 5
+	startTime := time.Now()
 
-	// Read and ignore the CSV header
-	if _, err := reader.Read(); err != nil {
-		fmt.Println("Error reading header:", err)
-		os.Exit(1)
-	}
+	//minimumCopies := ProcessAllLines(file)
 
-	var rows []model.Installation
+	minimumCopies := ProcessByLine(file)
+	endTime := time.Now()
+	elapsedTime := endTime.Sub(startTime)
+	fmt.Printf("Total number of copies of application id %d needed by the company: %d\n", ApplicationID, minimumCopies)
+	fmt.Printf("Time taken: %v\n", elapsedTime)
 
+}
+
+func ProcessByLine(file *os.File) int {
+	reader := csv.NewReader(file)
+	reader.FieldsPerRecord = 5
+	var lm = licensemanager.NewLicenseManager()
 	for {
-		record, err := reader.Read()
+		row, err := csvreader.ReadCSVByLine(reader)
+		lm.ProccessRow(row, ApplicationID)
 		if err == io.EOF {
 			break
 		}
-		if err != nil {
-			fmt.Println("Error reading record:", err)
-			os.Exit(1)
-		}
-
-		computerID, _ := strconv.Atoi(record[0])
-		userID, _ := strconv.Atoi(record[1])
-		applicationID, _ := strconv.Atoi(record[2])
-		computerType := strings.ToUpper(strings.TrimSpace(record[3]))
-
-		rows = append(rows, model.Installation{
-			ComputerID:    computerID,
-			UserID:        userID,
-			ApplicationID: applicationID,
-			ComputerType:  computerType,
-		})
 	}
+	return lm.GetMiniCopiesRequired()
 
-	applicationID := 374
-	minimumCopies := service.CalculateMinimumCopies(rows, applicationID)
-	endTime := time.Now()
-	elapsedTime := endTime.Sub(startTime)
-	fmt.Printf("Total number of copies of application id %d needed by the company: %d\n", applicationID, minimumCopies)
-	fmt.Printf("Time taken: %v\n", elapsedTime)
-
+}
+func ProcessAllLines(file *os.File) int {
+	reader := csv.NewReader(file)
+	reader.FieldsPerRecord = 5
+	rows, err := csvreader.ReadCSV(file)
+	if err != nil {
+		fmt.Println("Error reading csv  file:", err)
+		os.Exit(1)
+	}
+	var lm = licensemanager.NewLicenseManager()
+	minimumCopies := lm.CalculateMinimumCopies(rows, ApplicationID)
+	return minimumCopies
 }
