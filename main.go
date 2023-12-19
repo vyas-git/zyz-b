@@ -43,7 +43,7 @@ func ProcessByLine(file *os.File) int {
 	var lm = licensemanager.NewLicenseManager()
 	for {
 		row, err := csvreader.ReadCSVByLine(reader)
-		lm.ProccessRow(row, ApplicationID)
+		lm.ProcessRow(row, ApplicationID)
 		if err == io.EOF {
 			break
 		}

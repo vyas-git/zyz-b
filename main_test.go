@@ -7,6 +7,7 @@ import (
 )
 
 func TestCalculateMinimumCopies(t *testing.T) {
+	var lm = licensemanager.NewLicenseManager()
 
 	tests := []struct {
 		name     string
@@ -94,14 +95,35 @@ func TestCalculateMinimumCopies(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			lm := licensemanager.NewLicenseManager()
 			for _, row := range test.rows {
-				lm.ProccessRow(row, test.appID)
+				lm.ProcessRow(row, test.appID)
 			}
 			result := lm.GetMiniCopiesRequired()
 			if result != test.expected {
 				t.Errorf("Expected: %d, Got: %d", test.expected, result)
 			}
+			lm.Reset()
 		})
+	}
+}
+
+func BenchmarkCalculateMinimumCopies(b *testing.B) {
+	rows := []model.Installation{
+		{1, 1, 374, "LAPTOP"},
+		// Add more rows as needed for your benchmark
+	}
+	appID := 374
+	lm := licensemanager.NewLicenseManager()
+
+	// Run the function b.N times
+	for i := 0; i < b.N; i++ {
+		for _, row := range rows {
+			lm.ProcessRow(row, appID)
+		}
+		// Get the result for each iteration
+		_ = lm.GetMiniCopiesRequired()
+
+		// Reset the LicenseManager for the next iteration
+		lm.Reset()
 	}
 }
